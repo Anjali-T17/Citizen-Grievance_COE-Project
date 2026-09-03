@@ -36,6 +36,7 @@ export const featureAPI = {
 
 export const recommendationAPI = {
   getRecommendation: (payload) => api.post('/recommendations', payload),
+  submitFeedback: (payload) => api.post('/recommendations/feedback', payload),
 };
 
 export const overrideAPI = {
@@ -44,6 +45,16 @@ export const overrideAPI = {
 
 export const analyticsAPI = {
   getUsageAnalytics: () => api.get('/analytics/usage'),
+  getErrorAnalysis: () => api.get('/analytics/error-analysis'),
+};
+
+export const experimentAPI = {
+  getExperimentMetrics: () => api.get('/experiments/baseline-vs-assistant'),
+};
+
+export const stakeholderAPI = {
+  submitValidation: (payload) => api.post('/stakeholders/validation', payload),
+  getSummary: () => api.get('/stakeholders/summary'),
 };
 
 export default api;

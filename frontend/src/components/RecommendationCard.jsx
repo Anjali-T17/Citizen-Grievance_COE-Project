@@ -1,10 +1,27 @@
-import React from 'react';
-import { Sparkles, HelpCircle, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, HelpCircle, ArrowRight, ShieldCheck, AlertCircle, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
+import { recommendationAPI } from '../services/api';
 
 export const RecommendationCard = ({ recommendation, onExplain, onExecute }) => {
+  const [feedbackSent, setFeedbackSent] = useState(null);
+
   if (!recommendation) return null;
 
   const scorePct = Math.min(Math.max(recommendation.score, 0), 100);
+
+  const handleRating = async (isHelpful) => {
+    try {
+      await recommendationAPI.submitFeedback({
+        recommendation_id: recommendation.id || 1,
+        anonymous_user_id: 'USER_001',
+        is_helpful: isHelpful,
+        feedback_text: isHelpful ? 'User found recommendation relevant' : 'User rated recommendation unhelpful'
+      });
+      setFeedbackSent(isHelpful);
+    } catch (err) {
+      console.error('Feedback submission error:', err);
+    }
+  };
 
   return (
     <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900 border border-sky-500/30 shadow-xl space-y-4">
@@ -20,10 +37,12 @@ export const RecommendationCard = ({ recommendation, onExplain, onExecute }) => 
           </div>
         </div>
 
-        {/* Score Pill */}
         <div className="text-right">
           <span className="text-xl font-extrabold text-emerald-400">{recommendation.score}</span>
           <span className="text-xs text-slate-400">/100</span>
+          {recommendation.hybrid_similarity_score > 0 && (
+            <p className="text-[10px] text-sky-400 font-mono">TF-IDF: {(recommendation.hybrid_similarity_score * 100).toFixed(0)}%</p>
+          )}
         </div>
       </div>
 
@@ -44,24 +63,53 @@ export const RecommendationCard = ({ recommendation, onExplain, onExecute }) => 
       </div>
 
       {/* Status Badges */}
-      <div className="flex flex-wrap items-center gap-2 pt-1">
-        {recommendation.allowed ? (
-          <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Permission Granted
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-300 border border-red-500/30">
-            <AlertCircle className="w-3.5 h-3.5" />
-            Role Access Restricted
-          </span>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2">
+          {recommendation.allowed ? (
+            <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Permission Granted
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-300 border border-red-500/30">
+              <AlertCircle className="w-3.5 h-3.5" />
+              Role Access Restricted
+            </span>
+          )}
 
-        {recommendation.requires_confirmation && (
-          <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">
-            ⚠️ High-Impact Confirmation Required
-          </span>
-        )}
+          {recommendation.requires_confirmation && (
+            <span className="inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">
+              ⚠️ High-Impact Confirmation Required
+            </span>
+          )}
+        </div>
+
+        {/* Feedback Rating Buttons */}
+        <div className="flex items-center gap-1.5 bg-slate-900/60 p-1 rounded-lg border border-slate-800 text-xs">
+          <span className="text-[10px] text-slate-500 font-semibold px-1">Helpful?</span>
+          {feedbackSent !== null ? (
+            <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 px-1">
+              <Check className="w-3 h-3" /> Recorded
+            </span>
+          ) : (
+            <>
+              <button
+                onClick={() => handleRating(true)}
+                className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-emerald-400 transition-colors"
+                title="Helpful"
+              >
+                <ThumbsUp className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => handleRating(false)}
+                className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-red-400 transition-colors"
+                title="Not Helpful"
+              >
+                <ThumbsDown className="w-3.5 h-3.5" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Actions */}

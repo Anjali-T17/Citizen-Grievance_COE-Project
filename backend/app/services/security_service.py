@@ -9,23 +9,22 @@ INJECTION_PATTERNS = [
     r"reveal (system|hidden|internal) (prompt|data|schema)",
     r"act as (admin|root|superuser|developer)",
     r"grant (me )?(admin|all) (access|privileges)",
-    r"override (security|permission)"
+    r"override (security|permission)",
+    r"select\s+.*\s+from\s+users",
+    r"<script\b[^>]*>",
+    r"sudo\s+escalate",
+    r"exec\s*\("
 ]
 
 class SecurityService:
     @staticmethod
     def inspect_untrusted_input(input_text: str, user_id: str, db: Session) -> tuple[bool, str]:
-        """
-        Inspects text for prompt injection attempts.
-        Returns (is_malicious: bool, warning_message: str)
-        """
         if not input_text:
             return False, ""
 
         lowered = input_text.lower()
         for pattern in INJECTION_PATTERNS:
             if re.search(pattern, lowered):
-                # Log security warning in audit logs
                 log_entry = AuditLog(
                     anonymous_user_id=user_id,
                     action="PROMPT_INJECTION_ATTEMPT",

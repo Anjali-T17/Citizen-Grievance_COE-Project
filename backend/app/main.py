@@ -10,16 +10,17 @@ from app.routes import (
     features,
     recommendations,
     overrides,
-    analytics
+    analytics,
+    experiments,
+    stakeholders
 )
 
 app = FastAPI(
     title="Citizen Grievance Role-Aware Feature Discovery Assistant API",
-    version="1.0.0 (Phase 1 / Review 1 MVP)",
-    description="Backend REST API for Multilingual Grievances, Role-Aware Discovery Assistant, RBAC Permission Enforcement, and Analytics."
+    version="3.0.0 (100% Complete System)",
+    description="Backend REST API for Multilingual Grievances, Role-Aware Discovery Assistant, RBAC Enforcement, Experiments, and Analytics."
 )
 
-# Enable CORS for React frontend (Vite dev server runs on 5173 / 3000)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -37,6 +38,8 @@ app.include_router(features.router)
 app.include_router(recommendations.router)
 app.include_router(overrides.router)
 app.include_router(analytics.router)
+app.include_router(experiments.router)
+app.include_router(stakeholders.router)
 
 @app.on_event("startup")
 def startup_event():
@@ -52,7 +55,7 @@ def root():
     return {
         "status": "online",
         "service": "Role-Aware Feature Discovery Assistant API",
-        "phase": "Phase 1 - Review 1 (35% MVP)",
+        "phase": "Phase 1, Phase 2 & Phase 3 Complete (100% Full Project)",
         "docs_url": "/docs"
     }
 
