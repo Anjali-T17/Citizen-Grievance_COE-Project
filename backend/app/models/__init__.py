@@ -8,7 +8,10 @@ from app.models.models import (
     Attachment,
     UsageEvent,
     Recommendation,
+    RecommendationFeedback,
     Override,
+    ExperimentMetric,
+    StakeholderValidation,
     AuditLog
 )
 
@@ -22,6 +25,9 @@ __all__ = [
     "Attachment",
     "UsageEvent",
     "Recommendation",
+    "RecommendationFeedback",
     "Override",
+    "ExperimentMetric",
+    "StakeholderValidation",
     "AuditLog"
 ]

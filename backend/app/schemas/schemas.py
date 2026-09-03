@@ -4,8 +4,8 @@ from datetime import datetime
 
 # Auth / Demo Login
 class DemoLoginRequest(BaseModel):
-    organisation: str # "Municipal Corporation" or "External Partner"
-    role: str # "Citizen", "Grievance Officer", "Supervisor", "External Partner"
+    organisation: str
+    role: str
 
 class DemoLoginResponse(BaseModel):
     user_id: str
@@ -53,7 +53,7 @@ class AttachmentSchema(BaseModel):
 # Complaint
 class ComplaintCreate(BaseModel):
     description: str
-    language: str # English, Tamil, Hindi
+    language: str
     category: str
     priority: str = "Medium"
     attachment_name: Optional[str] = None
@@ -91,8 +91,8 @@ class FeatureSchema(BaseModel):
 # Recommendation Request & Response
 class RecommendationRequest(BaseModel):
     anonymous_user_id: str = "USER_001"
-    role: str # "Citizen", "Grievance Officer", "Supervisor", "External Partner"
-    organisation: str # "Municipal Corporation" or "External Partner"
+    role: str
+    organisation: str
     task_goal: str
     help_query: str
 
@@ -107,12 +107,31 @@ class RecommendationResponse(BaseModel):
     feature_name: str
     description: str
     score: float
+    hybrid_similarity_score: float = 0.0
     allowed: bool
     requires_confirmation: bool = False
     impact_level: str = "LOW"
     evidence: List[str]
     matched_rules: List[RecommendationScoreDetail]
     security_warning: Optional[str] = None
+
+# Recommendation Feedback
+class RecommendationFeedbackCreate(BaseModel):
+    recommendation_id: Optional[int] = None
+    anonymous_user_id: str = "USER_001"
+    is_helpful: bool
+    feedback_text: Optional[str] = ""
+
+class RecommendationFeedbackSchema(BaseModel):
+    id: int
+    recommendation_id: Optional[int]
+    anonymous_user_id: str
+    is_helpful: bool
+    feedback_text: Optional[str]
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
 
 # Override Request & Response
 class OverrideCreate(BaseModel):
@@ -152,3 +171,37 @@ class AnalyticsSummaryResponse(BaseModel):
     most_used_features: List[FeatureUsageStat]
     underused_features: List[FeatureUsageStat]
     override_reasons: List[OverrideStat]
+
+# Experiment & Evaluation Schemas (Phase 2 & 3)
+class GroupExperimentStat(BaseModel):
+    group_name: str # "BASELINE" or "ASSISTANT"
+    discovery_rate_pct: float
+    completion_rate_pct: float
+    avg_time_to_discovery_sec: float
+
+class ExperimentSummaryResponse(BaseModel):
+    baseline_stats: GroupExperimentStat
+    assistant_stats: GroupExperimentStat
+    discovery_improvement_pct: float
+    completion_improvement_pct: float
+    time_saved_pct: float
+
+class StakeholderValidationCreate(BaseModel):
+    stakeholder_role: str # Citizen, Officer, Supervisor, Auditor
+    usability_rating: int # 1 to 5
+    explainability_rating: int # 1 to 5
+    efficiency_improvement_pct: float = 45.0
+    feedback_notes: Optional[str] = ""
+
+class StakeholderSummaryResponse(BaseModel):
+    avg_usability_rating: float
+    avg_explainability_rating: float
+    avg_efficiency_gain_pct: float
+    total_validations: int
+    role_breakdown: List[dict]
+
+class ErrorAnalysisItem(BaseModel):
+    error_category: str # "Task Tag Misclassification", "Explicit Permission Block", "High-Impact User Override", "Adversarial Injection Block"
+    frequency: int
+    percentage: float
+    root_cause_explanation: str

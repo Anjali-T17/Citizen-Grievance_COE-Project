@@ -11,11 +11,18 @@ from app.schemas.schemas import (
     RecommendationRequest,
     RecommendationScoreDetail,
     RecommendationResponse,
+    RecommendationFeedbackCreate,
+    RecommendationFeedbackSchema,
     OverrideCreate,
     OverrideSchema,
     FeatureUsageStat,
     OverrideStat,
-    AnalyticsSummaryResponse
+    AnalyticsSummaryResponse,
+    GroupExperimentStat,
+    ExperimentSummaryResponse,
+    StakeholderValidationCreate,
+    StakeholderSummaryResponse,
+    ErrorAnalysisItem
 )
 
 __all__ = [
@@ -31,9 +38,16 @@ __all__ = [
     "RecommendationRequest",
     "RecommendationScoreDetail",
     "RecommendationResponse",
+    "RecommendationFeedbackCreate",
+    "RecommendationFeedbackSchema",
     "OverrideCreate",
     "OverrideSchema",
     "FeatureUsageStat",
     "OverrideStat",
-    "AnalyticsSummaryResponse"
+    "AnalyticsSummaryResponse",
+    "GroupExperimentStat",
+    "ExperimentSummaryResponse",
+    "StakeholderValidationCreate",
+    "StakeholderSummaryResponse",
+    "ErrorAnalysisItem"
 ]

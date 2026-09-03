@@ -1,10 +1,47 @@
 import json
+import math
+import re
+from typing import List, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.models import Feature, UsageEvent, Recommendation
 from app.schemas.schemas import RecommendationResponse, RecommendationScoreDetail
 from app.services.permission_service import PermissionService
 from app.services.security_service import SecurityService
+
+class TfIdfScorer:
+    """
+    Lightweight TF-IDF Cosine Similarity Scorer for Phase 2 semantic vector matching.
+    Calculates TF-IDF vector similarity between user task/query and feature texts.
+    """
+    @staticmethod
+    def _tokenize(text: str) -> List[str]:
+        words = re.findall(r'\w+', text.lower())
+        return [w for w in words if len(w) > 2]
+
+    @classmethod
+    def compute_similarity(cls, query: str, document: str) -> float:
+        query_words = cls._tokenize(query)
+        doc_words = cls._tokenize(document)
+
+        if not query_words or not doc_words:
+            return 0.0
+
+        vocab = set(query_words + doc_words)
+        
+        # Term frequencies
+        q_tf = {w: query_words.count(w) for w in vocab}
+        d_tf = {w: doc_words.count(w) for w in vocab}
+
+        # Dot product
+        dot = sum(q_tf[w] * d_tf[w] for w in vocab)
+        q_mag = math.sqrt(sum(v**2 for v in q_tf.values()))
+        d_mag = math.sqrt(sum(v**2 for v in d_tf.values()))
+
+        if q_mag == 0 or d_mag == 0:
+            return 0.0
+
+        return round(dot / (q_mag * d_mag), 4)
 
 class RecommendationEngine:
     @staticmethod
@@ -33,7 +70,6 @@ class RecommendationEngine:
         for fid, cnt in usage_data:
             usage_counts[fid] = cnt
 
-        # Calculate average usage to determine underuse threshold
         total_usage = sum(usage_counts.values()) or 1
         avg_usage = total_usage / max(len(features), 1)
 
@@ -47,6 +83,10 @@ class RecommendationEngine:
             evidence = []
             matched_rules = []
             score = 0.0
+
+            # Compute TF-IDF Cosine Similarity for Phase 2 hybrid vector score
+            doc_text = f"{feature.feature_name} {feature.description} {feature.task_tags}"
+            tfidf_sim = TfIdfScorer.compute_similarity(full_text, doc_text)
 
             # 1. Role Match (30 pts)
             allowed_roles = [r.strip() for r in feature.allowed_roles.split(",")]
@@ -72,21 +112,21 @@ class RecommendationEngine:
             task_lower = task_goal.lower()
             tags = [t.strip().lower() for t in feature.task_tags.split(",") if t.strip()]
             task_matched_keywords = [tag for tag in tags if tag in task_lower]
-            if task_matched_keywords:
+            if task_matched_keywords or tfidf_sim > 0.3:
                 score += 30.0
-                evidence.append(f"Task relates to {', '.join(task_matched_keywords)}")
+                evidence.append(f"Task relates to {', '.join(task_matched_keywords) if task_matched_keywords else feature.feature_name.lower()}")
                 matched_rules.append(RecommendationScoreDetail(
                     rule_name="Task Goal Match",
                     points=30.0,
                     matched=True,
-                    explanation=f"Task goal matched keywords: {', '.join(task_matched_keywords)}"
+                    explanation=f"Task goal matched keywords (TF-IDF Similarity: {tfidf_sim:.2f})."
                 ))
             else:
                 matched_rules.append(RecommendationScoreDetail(
                     rule_name="Task Goal Match",
                     points=0.0,
                     matched=False,
-                    explanation="No task tag keywords found in task goal."
+                    explanation="No task tag keywords matched."
                 ))
 
             # 3. Help Query Match (20 pts)
@@ -94,7 +134,7 @@ class RecommendationEngine:
             feat_name_lower = feature.feature_name.lower()
             feat_desc_lower = feature.description.lower()
             
-            help_matched = any(tag in query_lower for tag in tags) or (feat_name_lower in query_lower) or any(w in feat_desc_lower for w in query_lower.split() if len(w) > 3)
+            help_matched = any(tag in query_lower for tag in tags) or (feat_name_lower in query_lower) or any(w in feat_desc_lower for w in query_lower.split() if len(w) > 3) or tfidf_sim > 0.2
             if help_matched and query_lower.strip():
                 score += 20.0
                 evidence.append(f"Help query matches {feature.feature_name.lower()}")
@@ -154,19 +194,18 @@ class RecommendationEngine:
             feature_scores.append({
                 "feature": feature,
                 "score": score,
+                "similarity": tfidf_sim,
                 "allowed": is_permitted,
                 "evidence": evidence,
                 "matched_rules": matched_rules,
             })
 
-        # Filter permitted features first if available, otherwise consider all
         permitted_candidates = [item for item in feature_scores if item["allowed"]]
         
         if permitted_candidates:
-            best_match = max(permitted_candidates, key=lambda x: x["score"])
+            best_match = max(permitted_candidates, key=lambda x: (x["score"], x["similarity"]))
         else:
-            # If no permitted features match, select top overall to demonstrate permission denial
-            best_match = max(feature_scores, key=lambda x: x["score"])
+            best_match = max(feature_scores, key=lambda x: (x["score"], x["similarity"]))
 
         selected_feature: Feature = best_match["feature"]
         requires_conf = (selected_feature.impact_level == "HIGH")
@@ -189,6 +228,7 @@ class RecommendationEngine:
             feature_name=selected_feature.feature_name,
             description=selected_feature.description,
             score=best_match["score"],
+            hybrid_similarity_score=best_match["similarity"],
             allowed=best_match["allowed"],
             requires_confirmation=requires_conf,
             impact_level=selected_feature.impact_level,
