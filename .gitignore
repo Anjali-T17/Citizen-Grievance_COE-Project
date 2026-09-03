@@ -1,0 +1,31 @@
+# Python & Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+venv/
+env/
+ENV/
+backend/grievance_app.db
+*.db
+.pytest_cache/
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.DS_Store
+
+# Environment & Secrets
+.env
+.env.local
+*.env
+*.pem
+*.key
+
+# IDE & System
+.vscode/
+.idea/
+*.swp
