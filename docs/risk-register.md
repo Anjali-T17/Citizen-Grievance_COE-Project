@@ -1,0 +1,10 @@
+# Risk Register & Mitigation Strategy
+
+| Risk ID | Risk Description | Severity | Likelihood | Mitigation Strategy | Phase 1 Status |
+|---|---|---|---|---|---|
+| **R01** | **Client-Side Permission Bypass**: Malicious user modifies React state to reveal hidden buttons. | HIGH | MEDIUM | **Backend RBAC Enforcement**: FastAPI endpoints independently validate role and org permissions (`PermissionService`), returning HTTP 403 Access Denied. | **MITIGATED** (Backend enforces RBAC) |
+| **R02** | **Adversarial Prompt Injection**: User attempts to manipulate recommendation query string to bypass role controls. | HIGH | HIGH | **Security Shield Inspection**: `SecurityService` pattern-matches prompt injection signatures, logs audit alerts, and preserves strict permission boundaries. | **MITIGATED** (Security guard active) |
+| **R03** | **Unintended Execution of High-Impact Actions**: Assistant automatically executes destructive or high-level actions. | HIGH | LOW | **Human Confirmation Workflow**: High-impact features (`impact_level = HIGH`) enforce `requires_confirmation = true`, triggering mandatory confirmation dialogs. | **MITIGATED** (Human confirmation enforced) |
+| **R04** | **Unexplainable Recommendations**: Users distrust recommendations due to opaque black-box scoring. | MEDIUM | MEDIUM | **100-Point Transparent Scoring Engine**: Recommendations explicitly output exact rule points, evidence arrays, and "Why this recommendation?" modals. | **MITIGATED** (Rule evidence modal live) |
+| **R05** | **Data Privacy Leakage (PII)**: Real citizen data accidentally committed or logged. | CRITICAL | LOW | **Synthetic Anonymised Datasets**: Mandatory use of synthetic identifiers (`USER_001`, `COMPLAINT_001`, `ORG_001`). No real PII used. | **MITIGATED** (100% synthetic data) |
+| **R06** | **Database Migration Friction**: Transitioning from SQLite in Phase 1 to PostgreSQL in Phase 2 requires SQL rewriting. | MEDIUM | LOW | **SQLAlchemy ORM Abstraction**: Queries use standard ORM models, allowing database URL configuration changes without code rewrites. | **MITIGATED** (SQLAlchemy ORM used) |
