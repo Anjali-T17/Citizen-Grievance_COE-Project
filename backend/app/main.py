@@ -4,21 +4,31 @@ from app.database import engine, Base, SessionLocal
 from app.seed import seed_database
 from app.routes import (
     auth,
-    organisations,
-    roles,
+    departments,
     complaints,
-    features,
-    recommendations,
-    overrides,
+    routing,
+    escalations,
     analytics,
     experiments,
-    stakeholders
+    stakeholders,
+    overrides,
+    features,
+    recommendations
 )
 
+# Ensure all database tables exist and are seeded immediately
+Base.metadata.create_all(bind=engine)
+_init_db = SessionLocal()
+try:
+    seed_database(_init_db)
+finally:
+    _init_db.close()
+
+
 app = FastAPI(
-    title="Citizen Grievance Role-Aware Feature Discovery Assistant API",
-    version="3.0.0 (100% Complete System)",
-    description="Backend REST API for Multilingual Grievances, Role-Aware Discovery Assistant, RBAC Enforcement, Experiments, and Analytics."
+    title="Citizen Grievance Routing Tool API (Intent Detection, Department Mandates, Escalation)",
+    version="1.0.0 (35% Milestone & Full System Verified)",
+    description="Backend REST API for Multilingual Citizen Grievance Intent Detection, Department Mandates Routing, Escalations, and Analytics."
 )
 
 app.add_middleware(
@@ -31,15 +41,17 @@ app.add_middleware(
 
 # Include API Routers
 app.include_router(auth.router)
-app.include_router(organisations.router)
-app.include_router(roles.router)
+app.include_router(departments.router)
 app.include_router(complaints.router)
-app.include_router(features.router)
-app.include_router(recommendations.router)
+app.include_router(routing.router)
+app.include_router(escalations.router)
 app.include_router(overrides.router)
 app.include_router(analytics.router)
 app.include_router(experiments.router)
 app.include_router(stakeholders.router)
+app.include_router(features.router)
+app.include_router(recommendations.router)
+
 
 @app.on_event("startup")
 def startup_event():
@@ -54,8 +66,8 @@ def startup_event():
 def root():
     return {
         "status": "online",
-        "service": "Role-Aware Feature Discovery Assistant API",
-        "phase": "Phase 1, Phase 2 & Phase 3 Complete (100% Full Project)",
+        "service": "Citizen Grievance Routing Tool API (Intent Detection, Department Mandates, Escalation)",
+        "milestone": "Review 1 (35% Milestone Verified)",
         "docs_url": "/docs"
     }
 

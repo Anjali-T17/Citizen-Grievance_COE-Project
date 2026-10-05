@@ -1,7 +1,7 @@
-# Database Schema & Entity-Relationship Documentation
+# Database Schema & Entity-Relationship Documentation (Review 2 Complete)
 
 ## 1. Overview
-The database layer uses SQLAlchemy ORM over SQLite for Phase 1. The schema is designed with standard relational constraints and foreign keys to enable seamless migration to PostgreSQL or MySQL in Phase 2.
+The database layer uses SQLAlchemy ORM over SQLite (`grievance_app.db`). The schema is designed with standard relational constraints and foreign keys to enable seamless migration to PostgreSQL or MySQL.
 
 All data is strictly synthetic and anonymised (`USER_001`, `ORG_001`, `COMPLAINT_001`). No real citizen personal data is used.
 
@@ -12,9 +12,9 @@ All data is strictly synthetic and anonymised (`USER_001`, `ORG_001`, `COMPLAINT
 ### 2.1 `organisations`
 | Column Name | Data Type | Constraints | Description |
 |---|---|---|---|
-| `id` | VARCHAR | PRIMARY KEY | Unique Org ID (e.g. `ORG_001`) |
+| `id` | VARCHAR | PRIMARY KEY | Unique Org ID (e.g. `ORG_001`, `ORG_002`) |
 | `name` | VARCHAR | NOT NULL | Organisation Name (e.g. Municipal Corporation) |
-| `code` | VARCHAR | UNIQUE, NOT NULL | Machine code (e.g. `MUNICIPAL_CORP`) |
+| `code` | VARCHAR | UNIQUE, NOT NULL | Machine code (e.g. `GCMC`, `CBE_CORP`) |
 
 ### 2.2 `roles`
 | Column Name | Data Type | Constraints | Description |
@@ -61,7 +61,7 @@ All data is strictly synthetic and anonymised (`USER_001`, `ORG_001`, `COMPLAINT
 | `language` | VARCHAR | NOT NULL | Language (English, Tamil, Hindi) |
 | `category` | VARCHAR | NOT NULL | Category (Public Safety, Water, Roads, etc.) |
 | `priority` | VARCHAR | DEFAULT 'Medium' | Priority level (Low, Medium, High) |
-| `status` | VARCHAR | DEFAULT 'Submitted' | Status (Submitted, Under Review, Escalated, Resolved) |
+| `status` | VARCHAR | DEFAULT 'Submitted' | Lifecycle Status (Submitted, Routed, In Progress, Escalated, Resolved) |
 | `created_at` | DATETIME | DEFAULT UTC | Submission timestamp |
 
 ### 2.7 `attachments`
@@ -74,49 +74,23 @@ All data is strictly synthetic and anonymised (`USER_001`, `ORG_001`, `COMPLAINT
 | `file_size` | INTEGER | NOT NULL | Size in bytes |
 | `upload_status` | VARCHAR | DEFAULT 'Uploaded' | Verification status |
 
-### 2.8 `usage_events`
+### 2.8 `experiment_metrics`
 | Column Name | Data Type | Constraints | Description |
 |---|---|---|---|
-| `event_id` | INTEGER | PRIMARY KEY, AUTOINCREMENT | Event ID |
-| `anonymous_user_id` | VARCHAR | NOT NULL | Anonymous user ID |
-| `organisation_id` | VARCHAR | NOT NULL | Organisation ID |
-| `role` | VARCHAR | NOT NULL | Role at time of event |
-| `feature_id` | VARCHAR | NOT NULL | Invoked feature ID |
-| `task_goal` | VARCHAR | NULLABLE | Contextual task goal |
-| `help_query` | VARCHAR | NULLABLE | Contextual help query |
-| `timestamp` | DATETIME | DEFAULT UTC | Event timestamp |
-| `action` | VARCHAR | DEFAULT 'view' | Action type (view, execute) |
-| `success` | BOOLEAN | DEFAULT TRUE | Execution outcome |
+| `id` | INTEGER | PRIMARY KEY, AUTOINCREMENT | Metric ID |
+| `group` | VARCHAR | NOT NULL | Test Group (`BASELINE`, `ASSISTANT`) |
+| `feature_id` | VARCHAR | NOT NULL | Targeted Feature ID (`F003`, `F006`, `F008`) |
+| `discovered` | BOOLEAN | DEFAULT FALSE | Whether feature was discovered |
+| `completed` | BOOLEAN | DEFAULT FALSE | Whether task was successfully completed |
+| `time_to_discover_sec` | FLOAT | DEFAULT 0.0 | Time spent discovering feature |
 
-### 2.9 `recommendations`
+### 2.9 `stakeholder_validations`
 | Column Name | Data Type | Constraints | Description |
 |---|---|---|---|
-| `id` | INTEGER | PRIMARY KEY, AUTOINCREMENT | Recommendation ID |
-| `anonymous_user_id` | VARCHAR | NOT NULL | Targeted user ID |
-| `task_goal` | VARCHAR | NULLABLE | Input task goal |
-| `help_query` | VARCHAR | NULLABLE | Input help query |
-| `recommended_feature_id` | VARCHAR | NOT NULL | Recommended feature ID |
-| `score` | FLOAT | NOT NULL | Total score (0 - 100) |
-| `allowed` | BOOLEAN | DEFAULT TRUE | Permission status |
-| `evidence` | TEXT | NOT NULL | JSON string array of evidence |
-| `timestamp` | DATETIME | DEFAULT UTC | Generation timestamp |
-
-### 2.10 `overrides`
-| Column Name | Data Type | Constraints | Description |
-|---|---|---|---|
-| `id` | INTEGER | PRIMARY KEY, AUTOINCREMENT | Override ID |
-| `recommendation_id` | INTEGER | NULLABLE | Associated recommendation ID |
-| `anonymous_user_id` | VARCHAR | NOT NULL | User ID |
-| `action` | VARCHAR | NOT NULL | Cancelled action code |
-| `override_reason` | VARCHAR | NOT NULL | Reason dropdown selection |
-| `comment` | TEXT | NULLABLE | Optional user comment |
-| `timestamp` | DATETIME | DEFAULT UTC | Override timestamp |
-
-### 2.11 `audit_logs`
-| Column Name | Data Type | Constraints | Description |
-|---|---|---|---|
-| `id` | INTEGER | PRIMARY KEY, AUTOINCREMENT | Log ID |
-| `anonymous_user_id` | VARCHAR | NOT NULL | User ID |
-| `action` | VARCHAR | NOT NULL | Security or system action code |
-| `details` | TEXT | NULLABLE | Additional context |
-| `timestamp` | DATETIME | DEFAULT UTC | Log timestamp |
+| `id` | INTEGER | PRIMARY KEY, AUTOINCREMENT | Record ID |
+| `stakeholder_role` | VARCHAR | NOT NULL | Evaluator Role (Routing Officer, Engineer, etc.) |
+| `usability_rating` | INTEGER | NOT NULL | Score 1–5 |
+| `explainability_rating` | INTEGER | NOT NULL | Score 1–5 |
+| `routing_speedup_pct` | FLOAT | DEFAULT 45.0 | Speedup percentage estimate |
+| `feedback_notes` | TEXT | NULLABLE | Qualitative evaluator findings |
+| `timestamp` | DATETIME | DEFAULT UTC | Evaluation timestamp |

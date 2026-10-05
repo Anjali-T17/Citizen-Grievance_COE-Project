@@ -1,39 +1,31 @@
 import re
-from sqlalchemy.orm import Session
-from app.models.models import AuditLog
+from typing import Optional
 
 INJECTION_PATTERNS = [
-    r"ignore (your|all|previous) (instructions|rules|prompts)",
-    r"show (me )?(admin|restricted|all|supervisor) (only )?features",
-    r"bypass (role|permission|security|auth) (controls|checks)",
-    r"reveal (system|hidden|internal) (prompt|data|schema)",
-    r"act as (admin|root|superuser|developer)",
-    r"grant (me )?(admin|all) (access|privileges)",
-    r"override (security|permission)",
+    r"ignore\s+.*?\s*(instructions|rules|prompts)",
+    r"show\s+.*?\s*(admin|restricted|all|supervisor)\s+features",
+    r"bypass\s+.*?\s*(role|permission|security|auth)",
+    r"reveal\s+.*?\s*(system|hidden|internal)\s+(prompt|data|schema)",
+    r"act\s+as\s+(admin|root|superuser|developer)",
+    r"grant\s+.*?\s*(admin|all)\s+(access|privileges)",
+    r"override\s+.*?\s*(security|permission)",
     r"select\s+.*\s+from\s+users",
     r"<script\b[^>]*>",
     r"sudo\s+escalate",
     r"exec\s*\("
 ]
 
+
 class SecurityService:
-    @staticmethod
-    def inspect_untrusted_input(input_text: str, user_id: str, db: Session) -> tuple[bool, str]:
+    def check_prompt_injection(self, input_text: str) -> Optional[str]:
         if not input_text:
-            return False, ""
+            return None
 
         lowered = input_text.lower()
         for pattern in INJECTION_PATTERNS:
             if re.search(pattern, lowered):
-                log_entry = AuditLog(
-                    anonymous_user_id=user_id,
-                    action="PROMPT_INJECTION_ATTEMPT",
-                    details=f"Malicious instruction pattern detected: '{input_text[:100]}...'"
-                )
-                db.add(log_entry)
-                db.commit()
+                return pattern
 
-                warning = "Untrusted instruction detected. Role and permission controls remain enforced."
-                return True, warning
+        return None
 
-        return False, ""
+security_service = SecurityService()
